@@ -1,0 +1,2 @@
+rootProject.name = 'jfgCdi'
+include('jfgCdi_lib')
