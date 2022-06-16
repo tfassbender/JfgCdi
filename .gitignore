@@ -3,7 +3,7 @@
 
 # Ignore Gradle build output directory
 build
-jfgCdi_lib/bin
+jfgCdi_lib/bin/
 
 # Ignore eclipse settings and project files
 .project
