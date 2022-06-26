@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +35,10 @@ import net.jfabricationgames.cdi.testClasses.indirect.AbstractDependentType;
 import net.jfabricationgames.cdi.testClasses.indirect.ApplicationScopedImplementation;
 import net.jfabricationgames.cdi.testClasses.indirect.InstanceScopedImplementation;
 import net.jfabricationgames.cdi.testClasses.indirect.InterfaceDependentType;
+import net.jfabricationgames.cdi.testClasses.local.ClassWithLocalClass.LocalClassInNormalClass;
+import net.jfabricationgames.cdi.testClasses.local.LocalClassDependentType;
+import net.jfabricationgames.cdi.testClasses.local.ScopedClassWithLocalClass;
+import net.jfabricationgames.cdi.testClasses.local.ScopedClassWithLocalClass.LocalClassInScopedClass;
 import net.jfabricationgames.cdi.testClasses.unmanaged.NotDependent;
 import net.jfabricationgames.cdi.testClasses.unmanaged.UnmanagedType;
 import net.jfabricationgames.cdi.testClasses.unmanaged.UnmanagedTypeDependency;
@@ -43,6 +48,11 @@ public class CdiContainerTest {
 	@BeforeAll
 	public static void initializeCdiContainer() throws IOException {
 		CdiContainer.create("net.jfabricationgames.cdi");
+	}
+	
+	@AfterAll
+	public static void destroyCdiContainer() {
+		CdiContainer.destroy();
 	}
 	
 	@Test
@@ -203,5 +213,25 @@ public class CdiContainerTest {
 		assertTrue(exception.getMessage().contains("ambiguousScopeTypeInterface"));
 		assertTrue(exception.getMessage().contains(AmbiguousScopeTypeImplementation1.class.getName()));
 		assertTrue(exception.getMessage().contains(AmbiguousScopeTypeImplementation2.class.getName()));
+	}
+	
+	@Test
+	public void testLocalClassOfScopedClass() {
+		assertTrue(CdiContainer.getInstance().getAnnotatedClasses(ApplicationScoped.class).contains(LocalClassInNormalClass.class));
+	}
+	
+	@Test
+	public void testLocalClassOfNotScopedClass() {
+		assertTrue(CdiContainer.getInstance().getAnnotatedClasses(ApplicationScoped.class).contains(ScopedClassWithLocalClass.class));
+		assertTrue(CdiContainer.getInstance().getAnnotatedClasses(ApplicationScoped.class).contains(LocalClassInScopedClass.class));
+	}
+	
+	@Test
+	public void testInjectLocalClasses() {
+		LocalClassDependentType dependent = new LocalClassDependentType();
+		CdiContainer.injectTo(dependent);
+		
+		assertNotNull(dependent.getLocalClassInNormalClass());
+		assertNotNull(dependent.getLocalClassInScopedClass());
 	}
 }

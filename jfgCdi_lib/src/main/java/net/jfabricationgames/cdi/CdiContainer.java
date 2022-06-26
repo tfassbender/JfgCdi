@@ -23,14 +23,20 @@ import net.jfabricationgames.cdi.exception.CdiAmbiguousDependencyException;
 import net.jfabricationgames.cdi.exception.CdiDependencyCycleException;
 import net.jfabricationgames.cdi.exception.CdiException;
 import net.jfabricationgames.cdi.exception.CdiUnresolvableDependencyException;
+import net.jfabricationgames.cdi.util.ReflectionUtils;
 
 /**
  * The main container class that is used to identify scoped classes and inject their instances into dependent instances.
  */
 public class CdiContainer {
 	
+	private static final String SELF_PACKAGE = "net.jfabricationgames.cdi";
+	
 	private static CdiContainer instance;
 	
+	/**
+	 * Inject all dependencies into the parameter object.
+	 */
 	public static void injectTo(Object dependent) throws CdiException {
 		if (instance == null) {
 			throw new CdiException("The CdiContainer was not yet initialized. Use CdiContainer.initialize(String...) to initialize it.");
@@ -39,18 +45,34 @@ public class CdiContainer {
 		instance.injectManagedObjectsTo(dependent, new ArrayList<>());
 	}
 	
+	/**
+	 * Create a {@link CdiContainer} that searches the given packages and all sub-packages for classes that are annotated 
+	 * with a scope annotation ({@link ApplicationScoped} or {@link InstanceScoped}).
+	 */
 	public static synchronized void create(String... packages) throws CdiException, IOException {
 		if (instance != null) {
 			throw new CdiException("An instance of the CdiContainer was already initialized.");
 		}
 		
-		Set<String> classNames = loadClasses(packages);
+		Set<String> packagesToLoad = new HashSet<>(Arrays.asList(packages));
+		packagesToLoad.add(SELF_PACKAGE); // add the top level package of this library to be able to use scoped classes from this library
+		
+		Set<String> classNames = CdiContainer.loadClasses(packagesToLoad);
 		
 		instance = new CdiContainer();
 		instance.registerScopedTypes(classNames);
 	}
 	
-	private static Set<String> loadClasses(String... packages) throws IOException {
+	/**
+	 * Destroys the {@link CdiContainer}.
+	 * 
+	 * NOTE: only the reverence is set to null. Other references to the container may avoid it's removing by the GC. 
+	 */
+	public static synchronized void destroy() {
+		instance = null;
+	}
+	
+	private static Set<String> loadClasses(Set<String> packages) throws IOException {
 		Set<String> subPackages = new HashSet<>();
 		
 		for (String packageName : packages) {
@@ -86,20 +108,6 @@ public class CdiContainer {
 			throw new CdiException("The CdiContainer was not yet initialized. Use CdiContainer.initialize(String...) to initialize it.");
 		}
 		return instance;
-	}
-	
-	private static List<Field> getAllFieldsOf(Class<?> type) {
-		return getAllFieldsOf(type, new ArrayList<>());
-	}
-	
-	private static List<Field> getAllFieldsOf(Class<?> type, List<Field> fields) {
-		fields.addAll(Arrays.asList(type.getDeclaredFields()));
-		
-		if (type.getSuperclass() != null) {
-			getAllFieldsOf(type.getSuperclass(), fields);
-		}
-		
-		return fields;
 	}
 	
 	private Map<Class<? extends Annotation>, Set<Class<?>>> annotatedClasses = new HashMap<>();
@@ -143,7 +151,7 @@ public class CdiContainer {
 	}
 	
 	private <T> void injectManagedObjectsTo(Object dependent, List<Class<?>> transitiveDependenciesList) throws CdiException {
-		for (Field field : getAllFieldsOf(dependent.getClass())) {
+		for (Field field : ReflectionUtils.getAllFieldsOf(dependent.getClass())) {
 			if (isCdiAnnotationPresent(field) && !isFieldSet(field, dependent)) {
 				Set<Class<?>> assignableClasses = findAssignableTypes(field);
 				
