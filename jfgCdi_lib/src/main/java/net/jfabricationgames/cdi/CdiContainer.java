@@ -157,7 +157,7 @@ public class CdiContainer {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private <T> T getObjectOf(Class<T> assignableClass) {
+	private synchronized <T> T getObjectOf(Class<T> assignableClass) {
 		T assignable = null;
 		if (assignableClass.isAnnotationPresent(ApplicationScoped.class)) {
 			// find an instance that was already created, or create a new one if none was created yet
