@@ -49,8 +49,12 @@ public class CdiContainer {
 		
 		if (!injecting) {
 			injecting = true;
-			instance.injectManagedObjectsTo(dependent, new ArrayList<>());
-			injecting = false;
+			try {
+				instance.injectManagedObjectsTo(dependent, new ArrayList<>());
+			}
+			finally {
+				injecting = false;
+			}
 		}
 	}
 	

@@ -237,7 +237,7 @@ public class CdiContainerTest {
 	}
 	
 	@Test
-	public void testInjectRecursiveDepencenciesDoesNotThrowAConcurrentModificationException() {
+	public void testInjectRecursiveDepencencies() {
 		DependentRecursiveClass dependent = new DependentRecursiveClass();
 		assertNotNull(dependent.getUpperBean());
 		assertNotNull(dependent.getUpperBean().getLowerBean());
