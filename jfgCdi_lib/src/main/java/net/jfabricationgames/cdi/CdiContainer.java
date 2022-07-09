@@ -33,14 +33,25 @@ public class CdiContainer {
 	private static CdiContainer instance;
 	
 	/**
+	 * A lock variable to ensure, that bean instance that is created from the CdiContainer does not call the injectTo 
+	 * method on itself to inject dependencies. Instead the container will inject dependencies to the instance afterwards.
+	 * Otherwise this can lead to a problem in a HashMap. See https://stackoverflow.com/a/54825115/8178842.
+	 */
+	private static boolean injecting = false;
+	
+	/**
 	 * Inject all dependencies into the parameter object.
 	 */
-	public static void injectTo(Object dependent) throws CdiException {
+	public static synchronized void injectTo(Object dependent) throws CdiException {
 		if (instance == null) {
 			throw new CdiException("The CdiContainer was not yet initialized. Use CdiContainer.initialize(String...) to initialize it.");
 		}
 		
-		instance.injectManagedObjectsTo(dependent, new ArrayList<>());
+		if (!injecting) {
+			injecting = true;
+			instance.injectManagedObjectsTo(dependent, new ArrayList<>());
+			injecting = false;
+		}
 	}
 	
 	/**

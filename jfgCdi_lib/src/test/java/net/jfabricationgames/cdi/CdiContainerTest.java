@@ -39,6 +39,7 @@ import net.jfabricationgames.cdi.testClasses.local.ClassWithLocalClass.LocalClas
 import net.jfabricationgames.cdi.testClasses.local.LocalClassDependentType;
 import net.jfabricationgames.cdi.testClasses.local.ScopedClassWithLocalClass;
 import net.jfabricationgames.cdi.testClasses.local.ScopedClassWithLocalClass.LocalClassInScopedClass;
+import net.jfabricationgames.cdi.testClasses.recursive_injection.DependentRecursiveClass;
 import net.jfabricationgames.cdi.testClasses.unmanaged.NotDependent;
 import net.jfabricationgames.cdi.testClasses.unmanaged.UnmanagedType;
 import net.jfabricationgames.cdi.testClasses.unmanaged.UnmanagedTypeDependency;
@@ -233,5 +234,12 @@ public class CdiContainerTest {
 		
 		assertNotNull(dependent.getLocalClassInNormalClass());
 		assertNotNull(dependent.getLocalClassInScopedClass());
+	}
+	
+	@Test
+	public void testInjectRecursiveDepencenciesDoesNotThrowAConcurrentModificationException() {
+		DependentRecursiveClass dependent = new DependentRecursiveClass();
+		assertNotNull(dependent.getUpperBean());
+		assertNotNull(dependent.getUpperBean().getLowerBean());
 	}
 }
