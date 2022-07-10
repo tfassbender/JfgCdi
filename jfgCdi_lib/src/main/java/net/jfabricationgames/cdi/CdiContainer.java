@@ -3,6 +3,8 @@ package net.jfabricationgames.cdi;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 import org.reflections.Reflections;
 
 import net.jfabricationgames.cdi.annotation.Inject;
+import net.jfabricationgames.cdi.annotation.marker.Instance;
 import net.jfabricationgames.cdi.annotation.scope.ApplicationScoped;
 import net.jfabricationgames.cdi.annotation.scope.InstanceScoped;
 import net.jfabricationgames.cdi.exception.CdiAmbiguousDependencyException;
@@ -176,26 +179,47 @@ public class CdiContainer {
 		T assignable = null;
 		if (assignableClass.isAnnotationPresent(ApplicationScoped.class)) {
 			// find an instance that was already created, or create a new one if none was created yet
-			assignable = (T) applicationScopedInstances.computeIfAbsent(assignableClass, clazz -> {
-				try {
-					return assignableClass.newInstance();
-				}
-				catch (InstantiationException | IllegalAccessException e) {
-					throw new CdiException("An instance of the class " + assignableClass.getName() + " could not be created.", e);
-				}
-			});
+			assignable = (T) applicationScopedInstances.computeIfAbsent(assignableClass, clazz -> createInstanceOf(assignableClass));
 		}
 		else if (assignableClass.isAnnotationPresent(InstanceScoped.class)) {
 			// create a new instance every time one is needed
-			try {
-				assignable = assignableClass.newInstance();
-			}
-			catch (InstantiationException | IllegalAccessException e) {
-				throw new CdiException("An instance of the class " + assignableClass.getName() + " could not be created.", e);
-			}
+			return createInstanceOf(assignableClass);
 		}
 		
 		return assignable;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T> T createInstanceOf(Class<T> assignableClass) throws CdiException {
+		for (Method method : assignableClass.getMethods()) {
+			if (method.isAnnotationPresent(Instance.class)) {
+				if (!method.getReturnType().equals(assignableClass)) {
+					throw new CdiException("The @Instance method '" + method.getName() + "' of the class '" + assignableClass + //
+							"' has a wrong return type '" + method.getReturnType() + "'. The expected type is '" + assignableClass + "'");
+				}
+				
+				try {
+					T instance = (T) method.invoke(null);
+					if (instance == null) {
+						throw new CdiException("The @Instance method '" + method.getName() + "' of the class '" + assignableClass + //
+								"' returns null, but an instance of the class '" + assignableClass + "' must be returned.");
+					}
+					return instance;
+				}
+				catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+					throw new CdiException("An instance of the class " + assignableClass.getName() + //
+							" could not be created using the @Instance method '" + method.getName() + "'.", e);
+				}
+			}
+		}
+		
+		try {
+			return assignableClass.newInstance();
+		}
+		catch (InstantiationException | IllegalAccessException e) {
+			throw new CdiException("An instance of the class " + assignableClass.getName() + //
+					" could not be created using the no-args constructor.", e);
+		}
 	}
 	
 	private void assertAssignableClassUnambiguous(Field field, Object dependent, Set<Class<?>> assignableClasses) throws CdiException {
