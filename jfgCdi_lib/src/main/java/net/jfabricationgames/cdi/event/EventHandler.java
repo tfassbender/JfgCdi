@@ -41,7 +41,7 @@ public class EventHandler {
 			
 			if (observerMethods != null) {
 				for (Method observerMethod : observerMethods) {
-					boolean accessible = observerMethod.isAccessible();
+					boolean accessible = observerMethod.canAccess(listener);
 					observerMethod.setAccessible(true);
 					
 					try {

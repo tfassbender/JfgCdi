@@ -137,7 +137,7 @@ public class CdiContainer {
 	}
 	
 	private boolean isFieldSet(Field field, Object dependent) {
-		boolean accessible = field.isAccessible();
+		boolean accessible = field.canAccess(dependent);
 		field.setAccessible(true);
 		
 		try {
@@ -160,7 +160,7 @@ public class CdiContainer {
 	}
 	
 	private void injectAssignableObjectTo(Object dependent, Field field, Object assignable) {
-		boolean accessible = field.isAccessible();
+		boolean accessible = field.canAccess(dependent);
 		field.setAccessible(true);
 		try {
 			field.set(dependent, assignable);
@@ -214,9 +214,9 @@ public class CdiContainer {
 		}
 		
 		try {
-			return assignableClass.newInstance();
+			return assignableClass.getDeclaredConstructor().newInstance();
 		}
-		catch (InstantiationException | IllegalAccessException e) {
+		catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 			throw new CdiException("An instance of the class " + assignableClass.getName() + //
 					" could not be created using the no-args constructor.", e);
 		}
