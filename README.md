@@ -2,6 +2,15 @@
 
 A simple CDI container to manage dependencies
 
+## Import into eclipse
+
+To import the project into eclipse:
+
+* Clone it, but **not into the workspace** (for some reason eclipse can't import the project correctly if it's already in the workspace. A subdirectory of the workspace with a different name is ok, however)
+* File -> import... -> Existing Gradle Project -> Configure a local Gradle version -> Next -> Finish
+
+Note: The project will not be placed directly in the workspace but remains in the cloned directory (e.g. in a subdirectory of the workspace). Not ideal for console access, but I couldn't figure out how to do this in the current eclipse verision (2024/03).
+
 ## Examples
 
 For examples on the usage of the library, see the test classes.
